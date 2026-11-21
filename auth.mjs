@@ -18,10 +18,13 @@ export function createAuth({
   secretEnv = 'AUTH_SECRET',
   bearerEnv = 'AUTH_BEARER_TOKEN',
   userEnv = 'AUTH_USER',
+  cookieNameEnv = 'AUTH_COOKIE_NAME',
+  maxAgeDaysEnv = 'AUTH_MAX_AGE_DAYS',
+  realmEnv = 'AUTH_REALM',
   defaultUser = 'ec',
-  cookieName = 'app_auth',
-  maxAgeDays = 30,
-  realm = 'Protected',
+  cookieName: cookieNameOption = '',
+  maxAgeDays: maxAgeDaysOption = 0,
+  realm: realmOption = '',
   basic = false,
 } = {}) {
   const env = (name) => process.env[name] || ''
@@ -29,7 +32,10 @@ export function createAuth({
   const secret = env(secretEnv)
   const bearer = env(bearerEnv)
   const user = env(userEnv) || defaultUser
-  const maxAge = Math.max(1, Number(maxAgeDays) || 30) * 86400
+  const cookieName = cookieNameOption || env(cookieNameEnv) || 'app_auth'
+  const maxAgeDays = Number(maxAgeDaysOption) || Number(env(maxAgeDaysEnv)) || 30
+  const realm = realmOption || env(realmEnv) || 'Protected'
+  const maxAge = Math.max(1, maxAgeDays) * 86400
 
   function verifyPassword(password) {
     if (!passwordHash || !password) return false

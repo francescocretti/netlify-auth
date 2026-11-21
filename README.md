@@ -116,7 +116,7 @@ di env serve un nuovo deploy.
 npm test
 ```
 
-14 test senza rete: cookie emesso/verificato/manomesso/scaduto/futuro, firma
+15 test senza rete: cookie emesso/verificato/manomesso/scaduto/futuro, firma
 sbagliata, bearer, password, basic opzionale, sfida 401 e attributi del cookie.
 
 ## Sicurezza e limiti

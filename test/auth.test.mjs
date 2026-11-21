@@ -138,6 +138,21 @@ test('unauthorized: JSON 401 e sfida solo in modalità basic', () => {
   assert.match(withBasic.headers.get('WWW-Authenticate'), /Basic realm="Protected"/)
 })
 
+test('cookie name e max age da env', () => {
+  process.env.T_COOKIE_NAME = 'env_cookie'
+  process.env.T_MAX_AGE = '7'
+  const envAuth = createAuth({
+    passwordHashEnv: 'T_HASH',
+    secretEnv: 'T_SECRET',
+    bearerEnv: 'T_BEARER',
+    cookieNameEnv: 'T_COOKIE_NAME',
+    maxAgeDaysEnv: 'T_MAX_AGE',
+  })
+  const header = envAuth.issueCookie(req())
+  assert.match(header, /env_cookie=/)
+  assert.match(header, /Max-Age=604800/)
+})
+
 test('authorized accetta cookie e bearer, non basic se disabilitato', () => {
   const header = auth.issueCookie(req())
   assert.equal(auth.authorized(withCookie(cookieValue(header))), true)
