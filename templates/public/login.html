@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="it">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Accedi</title>
+  <title>Sign in</title>
   <style>
     :root { color-scheme: dark; --bg:#141216; --card:#1d1a20; --line:#332e38; --text:#f3eef5; --muted:#a89fae; --accent:#b85b65; }
     * { box-sizing: border-box; }
@@ -24,20 +24,22 @@
 </head>
 <body>
   <form id="login">
-    <h1>Accedi</h1>
-    <p>Inserisci la password condivisa.</p>
+    <h1>Sign in</h1>
+    <p>Enter the shared password.</p>
     <label for="password">Password
       <input id="password" name="password" type="password" autocomplete="current-password" required autofocus>
     </label>
-    <button type="submit">Entra</button>
+    <button type="submit">Continue</button>
     <p role="alert" id="error"></p>
   </form>
   <script>
     const form = document.getElementById('login')
     const error = document.getElementById('error')
+    const button = form.querySelector('button')
     form.addEventListener('submit', async (event) => {
       event.preventDefault()
       error.textContent = ''
+      button.disabled = true
       const password = document.getElementById('password').value
       try {
         const response = await fetch('/api/login', {
@@ -49,9 +51,11 @@
           location.href = '/'
           return
         }
-        error.textContent = 'Password errata'
+        error.textContent = 'Incorrect password'
       } catch {
-        error.textContent = 'Errore di rete, riprova'
+        error.textContent = 'Network error. Please try again.'
+      } finally {
+        button.disabled = false
       }
     })
   </script>
