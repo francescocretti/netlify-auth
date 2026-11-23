@@ -1,4 +1,4 @@
-import { json } from './auth.mjs'
+import { json } from '../auth.mjs'
 
 export function loginHandler(auth, { delayMs = 300 } = {}) {
   return async function login(req) {
@@ -28,28 +28,6 @@ export function loginHandler(auth, { delayMs = 300 } = {}) {
         'Content-Type': 'application/json; charset=utf-8',
         'Cache-Control': 'no-store',
         'Set-Cookie': auth.issueCookie(req),
-      },
-    })
-  }
-}
-
-export function sessionHandler(auth) {
-  return function session(req) {
-    if (req.method !== 'GET') return json(405, { error: 'Method not allowed' })
-    if (!auth.verifyCookie(req)) return json(401, { error: 'Not authenticated' })
-    return json(200, { ok: true })
-  }
-}
-
-export function logoutHandler(auth) {
-  return function logout(req) {
-    if (req.method !== 'POST') return json(405, { error: 'Method not allowed' })
-    return new Response(JSON.stringify({ ok: true }), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json; charset=utf-8',
-        'Cache-Control': 'no-store',
-        'Set-Cookie': auth.clearCookie(req),
       },
     })
   }

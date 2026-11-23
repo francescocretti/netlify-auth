@@ -2,7 +2,10 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import crypto from 'node:crypto'
 import { createAuth } from '../auth.mjs'
-import { loginHandler, logoutHandler, sessionHandler } from '../netlify.mjs'
+import { healthHandler } from '../netlify/health.mjs'
+import { loginHandler } from '../netlify/login.mjs'
+import { logoutHandler } from '../netlify/logout.mjs'
+import { sessionHandler } from '../netlify/session.mjs'
 
 function hash(password) {
   const salt = crypto.randomBytes(16).toString('hex')
@@ -22,6 +25,18 @@ const auth = createAuth({
 const login = loginHandler(auth, { delayMs: 0 })
 const session = sessionHandler(auth)
 const logout = logoutHandler(auth)
+const health = healthHandler()
+
+test('health reports availability without exposing configuration', async () => {
+  const response = health(new Request('https://example.test/.netlify/functions/health'))
+  assert.equal(response.status, 200)
+  assert.deepEqual(await response.json(), { ok: true })
+
+  const post = health(new Request('https://example.test/.netlify/functions/health', {
+    method: 'POST',
+  }))
+  assert.equal(post.status, 405)
+})
 
 test('login handler rejects unsupported methods and invalid JSON', async () => {
   assert.equal((await login(new Request('https://example.test/api/login'))).status, 405)

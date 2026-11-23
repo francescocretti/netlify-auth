@@ -23,8 +23,7 @@
   "files": [
     "auth.mjs",
     "auth.d.mts",
-    "netlify.mjs",
-    "netlify.d.mts",
+    "netlify",
     "dist",
     "ui/html",
     "hash-password.mjs",
@@ -38,8 +37,24 @@
       "import": "./auth.mjs"
     },
     "./netlify": {
-      "types": "./netlify.d.mts",
-      "import": "./netlify.mjs"
+      "types": "./netlify/index.d.mts",
+      "import": "./netlify/index.mjs"
+    },
+    "./netlify/health": {
+      "types": "./netlify/health.d.mts",
+      "import": "./netlify/health.mjs"
+    },
+    "./netlify/login": {
+      "types": "./netlify/login.d.mts",
+      "import": "./netlify/login.mjs"
+    },
+    "./netlify/logout": {
+      "types": "./netlify/logout.d.mts",
+      "import": "./netlify/logout.mjs"
+    },
+    "./netlify/session": {
+      "types": "./netlify/session.d.mts",
+      "import": "./netlify/session.mjs"
     },
     "./react": {
       "types": "./dist/react/AuthGate.d.ts",

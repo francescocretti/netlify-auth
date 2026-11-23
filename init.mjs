@@ -10,17 +10,21 @@ export const auth = createAuth({
   realm: 'Your App',
 })
 `,
-  'login.mjs': `import { loginHandler } from '@francescocretti/netlify-auth/netlify'
+  'health.mjs': `import { healthHandler } from '@francescocretti/netlify-auth/netlify/health'
+
+export default healthHandler()
+`,
+  'login.mjs': `import { loginHandler } from '@francescocretti/netlify-auth/netlify/login'
 import { auth } from './_auth-config.mjs'
 
 export default loginHandler(auth)
 `,
-  'logout.mjs': `import { logoutHandler } from '@francescocretti/netlify-auth/netlify'
+  'logout.mjs': `import { logoutHandler } from '@francescocretti/netlify-auth/netlify/logout'
 import { auth } from './_auth-config.mjs'
 
 export default logoutHandler(auth)
 `,
-  'session.mjs': `import { sessionHandler } from '@francescocretti/netlify-auth/netlify'
+  'session.mjs': `import { sessionHandler } from '@francescocretti/netlify-auth/netlify/session'
 import { auth } from './_auth-config.mjs'
 
 export default sessionHandler(auth)
