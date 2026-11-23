@@ -66,6 +66,19 @@ Function URLs, so no redirect configuration is required:
 The UI gate controls what is rendered, but it does not secure data by itself.
 Every Function that reads or changes private data must also check authorization.
 
+## Plain HTML instead of React
+
+The package also ships a standalone login page. Copy it into the public
+directory used by the app:
+
+```bash
+cp node_modules/@francescocretti/netlify-auth/ui/html/login.html public/login.html
+```
+
+It posts directly to the standard Netlify login Function. Adjust its styles or
+the successful-login redirect as needed. The HTML version and the React
+component are maintained together under `ui/`; neither contains auth secrets.
+
 ## Protect a Function
 
 ```js
@@ -291,6 +304,17 @@ revoke cookies already issued; rotate both to force everybody to sign in again.
   plaintext HTTP.
 
 ## Development
+
+Repository layout:
+
+```text
+auth.mjs          # core auth implementation
+netlify.mjs       # ready-made Netlify handlers
+init.mjs          # generates Function entrypoints
+ui/react/         # React source
+ui/html/          # standalone HTML alternative
+dist/             # generated package build, ignored by Git
+```
 
 ```bash
 npm install
