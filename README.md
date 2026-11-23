@@ -20,6 +20,7 @@ The initializer creates:
 ```text
 netlify/functions/
 ├── _auth-config.mjs
+├── health.mjs
 ├── login.mjs
 ├── logout.mjs
 └── session.mjs
@@ -113,7 +114,7 @@ If you do not want to use the initializer, create these files yourself.
 
 ```js
 // netlify/functions/login.mjs
-import { loginHandler } from '@francescocretti/netlify-auth/netlify'
+import { loginHandler } from '@francescocretti/netlify-auth/netlify/login'
 import { auth } from './_auth-config.mjs'
 
 export default loginHandler(auth)
@@ -121,7 +122,7 @@ export default loginHandler(auth)
 
 ```js
 // netlify/functions/session.mjs
-import { sessionHandler } from '@francescocretti/netlify-auth/netlify'
+import { sessionHandler } from '@francescocretti/netlify-auth/netlify/session'
 import { auth } from './_auth-config.mjs'
 
 export default sessionHandler(auth)
@@ -129,11 +130,21 @@ export default sessionHandler(auth)
 
 ```js
 // netlify/functions/logout.mjs
-import { logoutHandler } from '@francescocretti/netlify-auth/netlify'
+import { logoutHandler } from '@francescocretti/netlify-auth/netlify/logout'
 import { auth } from './_auth-config.mjs'
 
 export default logoutHandler(auth)
 ```
+
+```js
+// netlify/functions/health.mjs
+import { healthHandler } from '@francescocretti/netlify-auth/netlify/health'
+
+export default healthHandler()
+```
+
+The health endpoint returns only `{ "ok": true }`; it does not reveal whether
+password, cookie, or bearer secrets are configured.
 
 The handlers use Netlify's modern Web `Request`/`Response` Function API.
 
@@ -259,6 +270,7 @@ Environment variable names can be changed through the matching
 ```js
 import { createAuth, json } from '@francescocretti/netlify-auth'
 import {
+  healthHandler,
   loginHandler,
   logoutHandler,
   sessionHandler,
@@ -266,10 +278,17 @@ import {
 import { AuthGate } from '@francescocretti/netlify-auth/react'
 ```
 
+Granular handler imports are also available:
+
+```js
+import { loginHandler } from '@francescocretti/netlify-auth/netlify/login'
+```
+
 - `createAuth(options)` creates the configured auth instance.
 - `json(status, body)` returns a no-store JSON `Response`.
-- `loginHandler(auth)`, `sessionHandler(auth)`, and `logoutHandler(auth)`
-  create ready-to-export Netlify handlers.
+- `loginHandler(auth)`, `sessionHandler(auth)`, and `logoutHandler(auth)` create
+  ready-to-export authenticated Netlify handlers.
+- `healthHandler()` creates a minimal public availability endpoint.
 - `AuthGate` checks and periodically refreshes the browser session, then
   renders either the React login screen or its children.
 
@@ -308,12 +327,17 @@ revoke cookies already issued; rotate both to force everybody to sign in again.
 Repository layout:
 
 ```text
-auth.mjs          # core auth implementation
-netlify.mjs       # ready-made Netlify handlers
-init.mjs          # generates Function entrypoints
-ui/react/         # React source
-ui/html/          # standalone HTML alternative
-dist/             # generated package build, ignored by Git
+auth.mjs           # core auth implementation
+netlify/           # one ready-made handler per Netlify Function
+  health.mjs
+  login.mjs
+  logout.mjs
+  session.mjs
+  index.mjs        # optional aggregate export
+init.mjs           # generates Function entrypoints
+ui/react/          # React source
+ui/html/           # standalone HTML alternative
+dist/              # generated package build, ignored by Git
 ```
 
 ```bash
