@@ -1,165 +1,302 @@
-# netlify-auth
+# @francescocretti/netlify-auth
 
-A small authentication gate for private Netlify utilities: **one shared
-password, one login screen, and one signed cookie**. There are no users, roles,
-identity providers, or server-side sessions.
+A small shared-password gate for private Netlify apps: one password, one signed
+cookie, ready-made Netlify Function handlers, and an optional React gate.
 
-Use it for a small app shared by one person or a trusted group when the goal is
-simply to keep API data off the public internet. It is not an identity or
-permissions system.
+This package is intentionally narrow. It is for small tools used by one person
+or a trusted group. It is not a user management or permissions system.
 
-## How it works
+## Quick start: new Netlify + React app
 
-1. The UI calls `GET /api/session` when it starts.
-2. A valid cookie returns `200`; a missing or expired cookie returns `401` and
-   the UI shows the login screen.
-3. `POST /api/login` with `{ "password": "..." }` checks the scrypt hash and
-   sets a signed `HttpOnly` cookie.
-4. API functions call `auth.authorized(req)`. Browser requests use the cookie;
-   cron jobs and scripts can use an optional bearer token.
-5. `POST /api/logout` clears the cookie.
+Install the package:
 
-The cookie contains only its version, issue time, and an HMAC signature. There
-is no session database. Rotating `AUTH_SECRET` invalidates all existing
-cookies. Changing `AUTH_PASSWORD_HASH` changes the accepted password, but does
-not invalidate cookies that were already issued; rotate both values when you
-need to revoke every existing login.
+```bash
+npm install @francescocretti/netlify-auth
+npx netlify-auth-init
+```
 
-## Add it to a Netlify project
+The initializer creates:
 
-1. Copy `auth.mjs` to `netlify/functions/_auth.mjs`.
-2. Copy the function templates:
+```text
+netlify/functions/
+├── _auth-config.mjs
+├── login.mjs
+├── logout.mjs
+└── session.mjs
+```
 
-   - `templates/netlify/functions/login.mjs` to
-     `netlify/functions/login.mjs`
-   - `templates/netlify/functions/logout.mjs` to
-     `netlify/functions/logout.mjs`
-   - `templates/netlify/functions/session.mjs` to
-     `netlify/functions/session.mjs`
+It never overwrites existing files.
 
-3. Create the secrets and add them to the Netlify environment:
+Generate a password hash and a cookie-signing secret:
 
-   ```bash
-   node hash-password.mjs "your-long-shared-password"
-   # Store the output as AUTH_PASSWORD_HASH.
+```bash
+npx netlify-auth-hash "your-long-shared-password"
+openssl rand -hex 32
+```
 
-   openssl rand -hex 32 # AUTH_SECRET
-   openssl rand -hex 32 # AUTH_BEARER_TOKEN, only if a job needs it
-   ```
+Add the results to the Netlify environment:
 
-4. Add a login UI. For a static site, copy `templates/public/login.html`. For
-   React, copy `templates/react/AuthGate.tsx` and `auth-gate.css`, then wrap
-   the private part of the app:
+```env
+AUTH_PASSWORD_HASH=<output from netlify-auth-hash>
+AUTH_SECRET=<output from openssl>
+```
 
-   ```tsx
-   import { AuthGate } from './AuthGate'
+Then wrap the React application:
 
-   export function App() {
-     return (
-       <AuthGate appName="My Utility">
-         <Dashboard />
-       </AuthGate>
-     )
-   }
-   ```
+```tsx
+import { AuthGate } from '@francescocretti/netlify-auth/react'
 
-5. Protect every function that returns or changes private data:
+export function App() {
+  return (
+    <AuthGate appName="My Utility">
+      <Dashboard />
+    </AuthGate>
+  )
+}
+```
 
-   ```js
-   import { createAuth, json } from './_auth.mjs'
+`AuthGate` imports its own default stylesheet and calls the standard Netlify
+Function URLs, so no redirect configuration is required:
 
-   const auth = createAuth({ realm: 'My Utility' })
+```text
+/.netlify/functions/session
+/.netlify/functions/login
+```
 
-   export default async (req) => {
-     if (!auth.authorized(req)) return auth.unauthorized()
-     return json(200, { ok: true })
-   }
-   ```
+The UI gate controls what is rendered, but it does not secure data by itself.
+Every Function that reads or changes private data must also check authorization.
 
-The UI gate is only presentation. It does not secure an endpoint by itself;
-the authorization check in each private function is what protects the data.
+## Protect a Function
 
-## Adapting the gate to another project
+```js
+// netlify/functions/todos.mjs
+import { json } from '@francescocretti/netlify-auth'
+import { auth } from './_auth-config.mjs'
 
-The defaults work when Netlify exposes functions under `/api/*`. If your app
-uses different routes, pass them to the React component:
+export default async function handler(req) {
+  if (!auth.authorized(req)) return auth.unauthorized()
+
+  return json(200, {
+    todos: [],
+  })
+}
+```
+
+The generated `_auth-config.mjs` contains the single shared instance:
+
+```js
+import { createAuth } from '@francescocretti/netlify-auth'
+
+export const auth = createAuth({
+  realm: 'Your App',
+})
+```
+
+Change project-specific options there, not separately in every Function.
+
+## Manual setup
+
+If you do not want to use the initializer, create these files yourself.
+
+```js
+// netlify/functions/login.mjs
+import { loginHandler } from '@francescocretti/netlify-auth/netlify'
+import { auth } from './_auth-config.mjs'
+
+export default loginHandler(auth)
+```
+
+```js
+// netlify/functions/session.mjs
+import { sessionHandler } from '@francescocretti/netlify-auth/netlify'
+import { auth } from './_auth-config.mjs'
+
+export default sessionHandler(auth)
+```
+
+```js
+// netlify/functions/logout.mjs
+import { logoutHandler } from '@francescocretti/netlify-auth/netlify'
+import { auth } from './_auth-config.mjs'
+
+export default logoutHandler(auth)
+```
+
+The handlers use Netlify's modern Web `Request`/`Response` Function API.
+
+## Custom React routes and styling
+
+If the project maps Functions to `/api/*`, pass the custom URLs:
 
 ```tsx
 <AuthGate
   appName="Internal Reports"
-  loginUrl="/.netlify/functions/login"
-  sessionUrl="/.netlify/functions/session"
+  loginUrl="/api/login"
+  sessionUrl="/api/session"
 >
   <Reports />
 </AuthGate>
 ```
 
-Customize colors and spacing in `auth-gate.css`. Keep the request contract the
-same, or update both the component and functions together:
+The default CSS is included automatically. Override the `.auth-gate*` classes
+in the app stylesheet, or copy the source styles and customize them. Its font
+and color-scheme rules are scoped to the gate and do not modify `:root` or the
+rest of the application's design system.
 
-- session: `GET`, with `200` for an authenticated browser and `401` otherwise;
-- login: `POST` JSON `{ "password": "..." }`, returning the signed cookie;
-- protected APIs: reject unauthenticated requests with `401`;
-- logout: `POST`, returning an expired cookie.
+By default, `AuthGate` checks the session when it mounts, whenever the window
+regains focus, and every 60 seconds. This makes the login screen reappear after
+the cookie expires or `AUTH_SECRET` is rotated. Change or disable polling with:
 
-For project-specific environment variable names or cookie settings, configure
-the same `createAuth` options in every function:
+```tsx
+<AuthGate sessionCheckIntervalMs={5 * 60_000}>
+  <App />
+</AuthGate>
+
+// Set sessionCheckIntervalMs={0} to check only on mount and window focus.
+```
+
+Protected API calls may still receive `401` before the next session check.
+Handle that response in the application's data layer when immediate feedback
+is important—for example, reload the page or remount the gate.
+
+The component is a convenience layer. A custom login screen only needs to:
+
+- call `GET /.netlify/functions/session` on startup;
+- send `POST /.netlify/functions/login` with JSON
+  `{ "password": "..." }`;
+- show the application after a `200` response.
+
+## Logout
+
+`AuthGate` deliberately does not add a logout button inside the protected app.
+The app controls where that action belongs. Call the logout Function and then
+update or reload the UI:
+
+```ts
+await fetch('/.netlify/functions/logout', {
+  method: 'POST',
+  credentials: 'same-origin',
+})
+
+location.reload()
+```
+
+## Cron jobs and scripts
+
+Browser users authenticate with the signed cookie. A cron job cannot use the
+login UI, so it can use an optional bearer token instead.
+
+Generate and store another secret:
+
+```bash
+openssl rand -hex 32
+```
+
+```env
+AUTH_BEARER_TOKEN=<random token>
+```
+
+Send it to any Function protected by `auth.authorized(req)`:
+
+```bash
+curl \
+  -H "Authorization: Bearer $AUTH_BEARER_TOKEN" \
+  https://example.netlify.app/.netlify/functions/todos
+```
+
+Existing projects can retain a differently named variable:
+
+```js
+export const auth = createAuth({
+  bearerEnv: 'CRON_TOKEN',
+})
+```
+
+Never include a bearer token in the React bundle.
+
+## Configuration
 
 ```js
 const auth = createAuth({
-  passwordHashEnv: 'MY_APP_PASSWORD_HASH',
-  secretEnv: 'MY_APP_AUTH_SECRET',
-  bearerEnv: 'MY_APP_JOB_TOKEN',
-  cookieName: 'my_app_auth',
-  maxAgeDays: 14,
+  passwordHashEnv: 'AUTH_PASSWORD_HASH',
+  secretEnv: 'AUTH_SECRET',
+  bearerEnv: 'AUTH_BEARER_TOKEN',
+  cookieName: 'app_auth',
+  maxAgeDays: 30,
   realm: 'My App',
 })
 ```
 
-## Environment variables
-
-| Variable | Required | Purpose |
+| Environment variable | Required | Purpose |
 |---|---:|---|
 | `AUTH_PASSWORD_HASH` | yes | scrypt `salt:key` hash of the shared password |
 | `AUTH_SECRET` | yes | signs cookies; use at least 32 random bytes |
 | `AUTH_BEARER_TOKEN` | no | bearer token for cron jobs or scripts |
 | `AUTH_COOKIE_NAME` | no | cookie name; defaults to `app_auth` |
 | `AUTH_MAX_AGE_DAYS` | no | cookie lifetime; defaults to 30 days |
-| `AUTH_REALM` | no | Basic auth realm, if Basic auth is enabled |
+| `AUTH_REALM` | no | Basic auth realm when Basic auth is enabled |
 | `AUTH_USER` | no | Basic auth username; defaults to `user` |
 
-Never put the password, hash, secret, or bearer token in the browser bundle.
-They belong in server-side Netlify environment variables. Redeploy after an
-environment change.
+Environment variable names can be changed through the matching
+`passwordHashEnv`, `secretEnv`, `bearerEnv`, `cookieNameEnv`,
+`maxAgeDaysEnv`, `realmEnv`, and `userEnv` options.
 
-## Module API
+## Package exports
 
-- `createAuth(options)` returns `authorized`, `verifyCookie`, `verifyBearer`,
-  `verifyBasic`, `verifyPassword`, `issueCookie`, `clearCookie`, and
-  `unauthorized`.
-- `json(status, body)` creates a JSON `Response` with `Cache-Control: no-store`.
-- Set `basic: true` only if you explicitly need HTTP Basic auth for tools such
-  as curl. It is disabled by default.
+```js
+import { createAuth, json } from '@francescocretti/netlify-auth'
+import {
+  loginHandler,
+  logoutHandler,
+  sessionHandler,
+} from '@francescocretti/netlify-auth/netlify'
+import { AuthGate } from '@francescocretti/netlify-auth/react'
+```
+
+- `createAuth(options)` creates the configured auth instance.
+- `json(status, body)` returns a no-store JSON `Response`.
+- `loginHandler(auth)`, `sessionHandler(auth)`, and `logoutHandler(auth)`
+  create ready-to-export Netlify handlers.
+- `AuthGate` checks and periodically refreshes the browser session, then
+  renders either the React login screen or its children.
+
+TypeScript declarations are included. React is a peer dependency and is not
+bundled twice.
+
+## How it works
+
+1. The React gate calls the session Function.
+2. A valid cookie returns `200`; a missing or expired cookie returns `401`.
+3. The login Function verifies the password against its scrypt hash.
+4. A successful login sets an HMAC-signed, `HttpOnly` cookie.
+5. Protected Functions accept that cookie or the optional bearer token.
+6. The logout Function expires the cookie.
+
+The cookie contains only its version, issue time, and signature. There is no
+session database. Rotating `AUTH_SECRET` invalidates every existing cookie.
+Changing only `AUTH_PASSWORD_HASH` changes the accepted password but does not
+revoke cookies already issued; rotate both to force everybody to sign in again.
 
 ## Security and limits
 
 - Cookies are `HttpOnly`, `SameSite=Lax`, and `Secure` on HTTPS.
-- Failed logins wait 300 ms. This slows bursts down but is not distributed
-  rate limiting. Use a long password and consider Netlify rate limiting or an
-  upstream control if the endpoint is exposed to sustained attacks.
-- The static HTML and JavaScript remain public; private data must live behind
-  protected functions. Hiding the site shell too requires an edge gate or a
-  platform access-control feature.
-- This design intentionally has no per-user revocation, roles, audit trail,
-  password reset, or multi-factor authentication. Use a real identity service
-  when any of those become requirements.
-- Run the app over HTTPS in production. Basic auth and bearer tokens are not
-  safe over plaintext HTTP.
+- Failed logins wait 300 ms. This slows bursts but is not distributed rate
+  limiting. Use a long password and add an upstream control if needed.
+- The static HTML and JavaScript remain public. Private data must be returned
+  only by Functions that call `auth.authorized(req)`.
+- There is no per-user revocation, role system, audit trail, password reset, or
+  multi-factor authentication. Use an identity service if those become
+  requirements.
+- Use HTTPS in production. Bearer tokens and Basic auth are unsafe over
+  plaintext HTTP.
 
-## Tests
+## Development
 
 ```bash
+npm install
 npm test
+npm run build
+npm pack --dry-run
 ```
 
-The tests run locally with Node's built-in test runner and require no network.
+The tests use Node's built-in test runner and require no network.
