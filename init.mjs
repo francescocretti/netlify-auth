@@ -1,19 +1,39 @@
 #!/usr/bin/env node
-import { copyFile, mkdir } from 'node:fs/promises'
-import { constants } from 'node:fs'
+import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
 const targetDir = path.resolve(process.cwd(), 'netlify/functions')
-const templateDir = new URL('./templates/netlify/functions/', import.meta.url)
-const files = ['_auth-config.mjs', 'login.mjs', 'logout.mjs', 'session.mjs']
+const files = {
+  '_auth-config.mjs': `import { createAuth } from '@francescocretti/netlify-auth'
+
+export const auth = createAuth({
+  realm: 'Your App',
+})
+`,
+  'login.mjs': `import { loginHandler } from '@francescocretti/netlify-auth/netlify'
+import { auth } from './_auth-config.mjs'
+
+export default loginHandler(auth)
+`,
+  'logout.mjs': `import { logoutHandler } from '@francescocretti/netlify-auth/netlify'
+import { auth } from './_auth-config.mjs'
+
+export default logoutHandler(auth)
+`,
+  'session.mjs': `import { sessionHandler } from '@francescocretti/netlify-auth/netlify'
+import { auth } from './_auth-config.mjs'
+
+export default sessionHandler(auth)
+`,
+}
 
 await mkdir(targetDir, { recursive: true })
 
 let created = 0
-for (const file of files) {
+for (const [file, contents] of Object.entries(files)) {
   const target = path.join(targetDir, file)
   try {
-    await copyFile(new URL(file, templateDir), target, constants.COPYFILE_EXCL)
+    await writeFile(target, contents, { flag: 'wx' })
     console.log(`created ${path.relative(process.cwd(), target)}`)
     created += 1
   } catch (error) {

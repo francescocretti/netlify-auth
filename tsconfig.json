@@ -5,10 +5,10 @@
     "jsx": "react-jsx",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "outDir": "react",
-    "rootDir": "src/react",
+    "outDir": "dist/react",
+    "rootDir": "ui/react",
     "strict": true,
     "target": "ES2022"
   },
-  "include": ["src/react/**/*.tsx"]
+  "include": ["ui/react/**/*.tsx"]
 }

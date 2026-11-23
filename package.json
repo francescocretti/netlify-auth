@@ -25,8 +25,8 @@
     "auth.d.mts",
     "netlify.mjs",
     "netlify.d.mts",
-    "react",
-    "templates/netlify/functions",
+    "dist",
+    "ui/html",
     "hash-password.mjs",
     "init.mjs",
     "README.md",
@@ -42,10 +42,11 @@
       "import": "./netlify.mjs"
     },
     "./react": {
-      "types": "./react/AuthGate.d.ts",
-      "import": "./react/AuthGate.js"
+      "types": "./dist/react/AuthGate.d.ts",
+      "import": "./dist/react/AuthGate.js"
     },
-    "./styles.css": "./react/auth-gate.css"
+    "./styles.css": "./dist/react/auth-gate.css",
+    "./login.html": "./ui/html/login.html"
   },
   "bin": {
     "netlify-auth-hash": "./hash-password.mjs",
