@@ -327,7 +327,7 @@ revoke cookies already issued; rotate both to force everybody to sign in again.
 Repository layout:
 
 ```text
-auth.mjs           # core auth implementation
+index.mjs          # package entry point and core auth implementation
 netlify/           # one ready-made handler per Netlify Function
   health.mjs
   login.mjs
