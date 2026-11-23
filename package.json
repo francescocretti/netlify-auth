@@ -1,9 +1,72 @@
 {
-  "name": "netlify-auth",
-  "private": true,
+  "name": "@francescocretti/netlify-auth",
   "version": "1.0.0",
+  "description": "A small shared-password authentication gate for Netlify Functions and React apps.",
   "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/francescocretti/netlify-auth.git"
+  },
+  "homepage": "https://github.com/francescocretti/netlify-auth#readme",
+  "bugs": "https://github.com/francescocretti/netlify-auth/issues",
+  "keywords": [
+    "netlify",
+    "netlify-functions",
+    "authentication",
+    "react",
+    "auth-gate"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "auth.mjs",
+    "auth.d.mts",
+    "netlify.mjs",
+    "netlify.d.mts",
+    "react",
+    "templates/netlify/functions",
+    "hash-password.mjs",
+    "init.mjs",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": {
+      "types": "./auth.d.mts",
+      "import": "./auth.mjs"
+    },
+    "./netlify": {
+      "types": "./netlify.d.mts",
+      "import": "./netlify.mjs"
+    },
+    "./react": {
+      "types": "./react/AuthGate.d.ts",
+      "import": "./react/AuthGate.js"
+    },
+    "./styles.css": "./react/auth-gate.css"
+  },
+  "bin": {
+    "netlify-auth-hash": "./hash-password.mjs",
+    "netlify-auth-init": "./init.mjs"
+  },
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "peerDependencies": {
+    "react": ">=18"
+  },
   "scripts": {
-    "test": "node --test test/auth.test.mjs"
+    "build": "tsc -p tsconfig.json && node scripts/copy-css.mjs",
+    "test": "node --test test/*.test.mjs",
+    "prepack": "npm run build"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "typescript": "^5.7.0"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react'
 import type { FormEvent, ReactNode } from 'react'
 import './auth-gate.css'
 
-type AuthGateProps = {
+export type AuthGateProps = {
   children: ReactNode
   appName?: string
   loginUrl?: string
   sessionUrl?: string
+  sessionCheckIntervalMs?: number
 }
 
 type Status = 'checking' | 'signed-out' | 'signed-in'
@@ -14,8 +15,9 @@ type Status = 'checking' | 'signed-out' | 'signed-in'
 export function AuthGate({
   children,
   appName = 'Your App',
-  loginUrl = '/api/login',
-  sessionUrl = '/api/session',
+  loginUrl = '/.netlify/functions/login',
+  sessionUrl = '/.netlify/functions/session',
+  sessionCheckIntervalMs = 60_000,
 }: AuthGateProps) {
   const [status, setStatus] = useState<Status>('checking')
   const [password, setPassword] = useState('')
@@ -25,19 +27,33 @@ export function AuthGate({
   useEffect(() => {
     const controller = new AbortController()
 
-    fetch(sessionUrl, {
-      credentials: 'same-origin',
-      signal: controller.signal,
-    })
-      .then((response) => setStatus(response.ok ? 'signed-in' : 'signed-out'))
-      .catch((requestError: unknown) => {
+    async function checkSession() {
+      try {
+        const response = await fetch(sessionUrl, {
+          credentials: 'same-origin',
+          signal: controller.signal,
+        })
+        setStatus(response.ok ? 'signed-in' : 'signed-out')
+        if (response.ok) setError('')
+      } catch (requestError: unknown) {
         if (requestError instanceof DOMException && requestError.name === 'AbortError') return
         setError('Unable to reach the server. Please try again.')
-        setStatus('signed-out')
-      })
+        setStatus((current) => current === 'checking' ? 'signed-out' : current)
+      }
+    }
 
-    return () => controller.abort()
-  }, [sessionUrl])
+    void checkSession()
+    const interval = sessionCheckIntervalMs > 0
+      ? window.setInterval(checkSession, sessionCheckIntervalMs)
+      : undefined
+    window.addEventListener('focus', checkSession)
+
+    return () => {
+      controller.abort()
+      if (interval !== undefined) window.clearInterval(interval)
+      window.removeEventListener('focus', checkSession)
+    }
+  }, [sessionCheckIntervalMs, sessionUrl])
 
   async function signIn(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()

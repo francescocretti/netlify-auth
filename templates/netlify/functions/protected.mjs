@@ -1,8 +1,5 @@
-// Copy to netlify/functions/tasks.mjs (or your own API function).
-// Cookies are for people; bearer tokens are for cron jobs.
-import { createAuth, json } from './_auth.mjs'
-
-const auth = createAuth({ realm: 'Your App' })
+import { json } from '@francescocretti/netlify-auth'
+import { auth } from './_auth-config.mjs'
 
 export default async (req) => {
   if (!auth.authorized(req)) return auth.unauthorized()
