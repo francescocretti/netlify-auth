@@ -118,6 +118,12 @@ test('password', () => {
   assert.equal(auth.verifyPassword(''), false)
 })
 
+test('password rejects malformed hex hashes without throwing', () => {
+  process.env.T_BAD_HASH = 'salt:not-hex'
+  const malformed = createAuth({ passwordHashEnv: 'T_BAD_HASH' })
+  assert.equal(malformed.verifyPassword('anything'), false)
+})
+
 test('basic disabilitato per default', () => {
   const header = basic('team', 'shared pass')
   assert.equal(auth.verifyBasic(req('https://example.test/', { authorization: header })), false)
@@ -151,6 +157,21 @@ test('cookie name e max age da env', () => {
   const header = envAuth.issueCookie(req())
   assert.match(header, /env_cookie=/)
   assert.match(header, /Max-Age=604800/)
+})
+
+test('invalid cookie configuration falls back to safe defaults', () => {
+  process.env.T_BAD_COOKIE = 'bad; Path=/; injected=yes'
+  process.env.T_BAD_MAX_AGE = 'Infinity'
+  const safeDefaults = createAuth({
+    passwordHashEnv: 'T_HASH',
+    secretEnv: 'T_SECRET',
+    cookieNameEnv: 'T_BAD_COOKIE',
+    maxAgeDaysEnv: 'T_BAD_MAX_AGE',
+  })
+  const header = safeDefaults.issueCookie(req())
+  assert.match(header, /^app_auth=/)
+  assert.match(header, /Max-Age=2592000/)
+  assert.doesNotMatch(header, /injected/)
 })
 
 test('authorized accetta cookie e bearer, non basic se disabilitato', () => {

@@ -1,9 +1,5 @@
-// Auth per Netlify Functions: login con password condivisa e cookie firmato,
-// bearer per i processi macchina. Zero dipendenze, Web Request/Response.
-//
-// Filosofia: un cancello, non un sistema di identità. Una password per tutti,
-// nessun utente, nessun ruolo, nessun archivio di sessioni. Il cookie è solo
-// un lasciapassare firmato con scadenza: se scade, si reinserisce la password.
+// Auth for Netlify Functions: shared-password login with a signed cookie,
+// plus bearer tokens for machine-to-machine requests. Zero dependencies.
 import crypto from 'node:crypto'
 
 function safeEqual(a, b) {
@@ -21,7 +17,7 @@ export function createAuth({
   cookieNameEnv = 'AUTH_COOKIE_NAME',
   maxAgeDaysEnv = 'AUTH_MAX_AGE_DAYS',
   realmEnv = 'AUTH_REALM',
-  defaultUser = 'ec',
+  defaultUser = 'user',
   cookieName: cookieNameOption = '',
   maxAgeDays: maxAgeDaysOption = 0,
   realm: realmOption = '',
@@ -32,21 +28,24 @@ export function createAuth({
   const secret = env(secretEnv)
   const bearer = env(bearerEnv)
   const user = env(userEnv) || defaultUser
-  const cookieName = cookieNameOption || env(cookieNameEnv) || 'app_auth'
-  const maxAgeDays = Number(maxAgeDaysOption) || Number(env(maxAgeDaysEnv)) || 30
+  const configuredCookieName = cookieNameOption || env(cookieNameEnv) || 'app_auth'
+  // Cookie names must be HTTP tokens. Falling back is safer than emitting an
+  // invalid (or injectable) Set-Cookie header from a typo in configuration.
+  const cookieName = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/.test(configuredCookieName)
+    ? configuredCookieName
+    : 'app_auth'
+  const configuredMaxAgeDays = Number(maxAgeDaysOption || env(maxAgeDaysEnv) || 30)
+  const maxAgeDays = Number.isFinite(configuredMaxAgeDays) && configuredMaxAgeDays > 0
+    ? configuredMaxAgeDays
+    : 30
   const realm = realmOption || env(realmEnv) || 'Protected'
   const maxAge = Math.max(1, maxAgeDays) * 86400
 
   function verifyPassword(password) {
     if (!passwordHash || !password) return false
     const [salt, key] = passwordHash.split(':')
-    if (!salt || !key) return false
-    let expected
-    try {
-      expected = Buffer.from(key, 'hex')
-    } catch {
-      return false
-    }
+    if (!salt || !key || key.length % 2 !== 0 || !/^[0-9a-f]+$/i.test(key)) return false
+    const expected = Buffer.from(key, 'hex')
     if (expected.length === 0) return false
     const derived = crypto.scryptSync(password, salt, expected.length)
     return crypto.timingSafeEqual(derived, expected)
@@ -64,7 +63,7 @@ export function createAuth({
     }
   }
 
-  // Da mettere in Set-Cookie dopo un login riuscito.
+  // Use as the Set-Cookie value after a successful login.
   function issueCookie(req) {
     if (!secret) return ''
     const issued = Math.floor(Date.now() / 1000)
@@ -73,7 +72,7 @@ export function createAuth({
     return `${cookieName}=${value}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${secureFlag(req)}`
   }
 
-  // Da mettere in Set-Cookie per uscire.
+  // Use as the Set-Cookie value on logout.
   function clearCookie(req) {
     return `${cookieName}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secureFlag(req)}`
   }
@@ -107,7 +106,7 @@ export function createAuth({
     return safeEqual(header.slice(7), bearer)
   }
 
-  // Solo se basic=true: utile per API chiamate da curl, non per la login page.
+  // Only when basic=true: useful for curl, not for the login page.
   function verifyBasic(req) {
     if (!basic) return false
     const header = req.headers.get('authorization') || ''
@@ -123,12 +122,12 @@ export function createAuth({
     return decoded.slice(0, sep) === user && verifyPassword(decoded.slice(sep + 1))
   }
 
-  // Cookie (persone) o bearer (cron). Basic solo se abilitato.
+  // Cookie for people, bearer for jobs. Basic only when explicitly enabled.
   function authorized(req) {
     return verifyCookie(req) || verifyBearer(req) || verifyBasic(req)
   }
 
-  function unauthorized(message = 'Autenticazione richiesta') {
+  function unauthorized(message = 'Authentication required') {
     const headers = {
       'Content-Type': 'application/json; charset=utf-8',
       'Cache-Control': 'no-store',

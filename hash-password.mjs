@@ -1,11 +1,11 @@
 #!/usr/bin/env node
-// Genera l'hash scrypt da mettere in Netlify come AUTH_PASSWORD_HASH.
-// Uso: node hash-password.mjs "la-password"
+// Generate the scrypt hash to store in Netlify as AUTH_PASSWORD_HASH.
+// Usage: node hash-password.mjs "your-password"
 import crypto from 'node:crypto'
 
 const password = process.argv[2]
 if (!password) {
-  console.error('Uso: node hash-password.mjs "la-password"')
+  console.error('Usage: node hash-password.mjs "your-password"')
   process.exit(1)
 }
 const salt = crypto.randomBytes(16).toString('hex')
