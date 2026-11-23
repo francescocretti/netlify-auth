@@ -1,4 +1,4 @@
-import type { Auth } from '../auth.mjs'
+import type { Auth } from '../index.mjs'
 import type { NetlifyHandler } from './types.mjs'
 
 export function loginHandler(

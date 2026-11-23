@@ -21,8 +21,8 @@
     "node": ">=18"
   },
   "files": [
-    "auth.mjs",
-    "auth.d.mts",
+    "index.mjs",
+    "index.d.mts",
     "netlify",
     "dist",
     "ui/html",
@@ -33,8 +33,8 @@
   ],
   "exports": {
     ".": {
-      "types": "./auth.d.mts",
-      "import": "./auth.mjs"
+      "types": "./index.d.mts",
+      "import": "./index.mjs"
     },
     "./netlify": {
       "types": "./netlify/index.d.mts",

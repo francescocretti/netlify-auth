@@ -1,4 +1,4 @@
-import { json } from '../auth.mjs'
+import { json } from '../index.mjs'
 
 export function sessionHandler(auth) {
   return function session(req) {

@@ -2,7 +2,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import crypto from 'node:crypto'
-import { createAuth } from '../auth.mjs'
+import { createAuth } from '../index.mjs'
 
 function hash(password) {
   const salt = crypto.randomBytes(16).toString('hex')

@@ -1,4 +1,4 @@
-import { json } from '../auth.mjs'
+import { json } from '../index.mjs'
 
 export function loginHandler(auth, { delayMs = 300 } = {}) {
   return async function login(req) {

@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import crypto from 'node:crypto'
-import { createAuth } from '../auth.mjs'
+import { createAuth } from '../index.mjs'
 import { healthHandler } from '../netlify/health.mjs'
 import { loginHandler } from '../netlify/login.mjs'
 import { logoutHandler } from '../netlify/logout.mjs'
