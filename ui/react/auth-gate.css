@@ -74,19 +74,22 @@
 
 .auth-gate__password { position: relative; display: block; }
 
-.auth-gate__password input { padding-right: 64px; }
+.auth-gate__password input { padding-right: 48px; }
 
 .auth-gate .auth-gate__toggle {
   position: absolute;
   top: 50%;
   right: 6px;
+  width: 34px;
   min-height: 34px;
-  padding: 0 10px;
+  height: 34px;
+  padding: 0;
+  display: grid;
+  place-items: center;
   transform: translateY(-50%);
+  border-radius: 8px;
   background: transparent;
   color: #aeb4c0;
-  font-size: 0.8rem;
-  font-weight: 650;
 }
 
 .auth-gate .auth-gate__toggle:hover { color: #f7f7f8; }

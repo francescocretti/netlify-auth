@@ -17,11 +17,13 @@
     input { width:100%; margin-top:6px; padding:11px 12px; border-radius:10px;
             border:1px solid var(--line); background:#151217; color:var(--text); font:inherit; }
     input:focus { outline:2px solid color-mix(in srgb, var(--accent) 60%, transparent); border-color:var(--accent); }
-    .field { position:relative; }
-    .field input { padding-right:68px; }
-    .toggle { position:absolute; right:6px; top:50%; transform:translateY(-50%); margin:0; padding:6px 10px;
-              background:transparent; color:var(--muted); font-size:13px; font-weight:600; }
+    .field { position:relative; display:block; margin-top:6px; }
+    .field input { margin-top:0; padding-right:48px; }
+    .toggle { position:absolute; right:6px; top:50%; transform:translateY(-50%); margin:0; padding:0;
+              width:34px; height:34px; display:grid; place-items:center; border-radius:8px;
+              background:transparent; color:var(--muted); }
     .toggle:hover { color:var(--text); }
+    .toggle[aria-pressed="false"] .eye-off, .toggle[aria-pressed="true"] .eye { display:none; }
     button { margin-top:4px; padding:12px; border:0; border-radius:10px; background:var(--accent);
              color:#fff; font:inherit; font-weight:600; cursor:pointer; }
     [role="alert"] { min-height:20px; color:#f1a3ab; font-size:13px; }
@@ -34,7 +36,10 @@
     <label for="password">Password
       <span class="field">
         <input id="password" name="password" type="password" autocomplete="current-password" required autofocus>
-        <button type="button" class="toggle" id="toggle" aria-label="Show password" aria-pressed="false">Show</button>
+        <button type="button" class="toggle" id="toggle" aria-label="Show password" aria-pressed="false">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="eye"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="eye-off"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 19c-6.5 0-10-7-10-7a18.5 18.5 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c6.5 0 10 7 10 7a18.5 18.5 0 0 1-2.16 3.19"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><path d="m1 1 22 22"/></svg>
+        </button>
       </span>
     </label>
     <button type="submit">Continue</button>
@@ -49,7 +54,6 @@
     toggle.addEventListener('click', () => {
       const show = input.type === 'password'
       input.type = show ? 'text' : 'password'
-      toggle.textContent = show ? 'Hide' : 'Show'
       toggle.setAttribute('aria-label', show ? 'Hide password' : 'Show password')
       toggle.setAttribute('aria-pressed', String(show))
     })
