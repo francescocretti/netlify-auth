@@ -1,6 +1,6 @@
 {
   "name": "@francescocretti/netlify-auth",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A small shared-password authentication gate for Netlify Functions and React apps.",
   "type": "module",
   "license": "MIT",

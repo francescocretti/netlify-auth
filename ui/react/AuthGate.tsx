@@ -23,6 +23,7 @@ export function AuthGate({
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -98,15 +99,26 @@ export function AuthGate({
 
           <label>
             Password
-            <input
-              autoComplete="current-password"
-              autoFocus
-              disabled={submitting}
-              onChange={(event) => setPassword(event.target.value)}
-              required
-              type="password"
-              value={password}
-            />
+            <span className="auth-gate__password">
+              <input
+                autoComplete="current-password"
+                autoFocus
+                disabled={submitting}
+                onChange={(event) => setPassword(event.target.value)}
+                required
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+              />
+              <button
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                aria-pressed={showPassword}
+                className="auth-gate__toggle"
+                onClick={() => setShowPassword((current) => !current)}
+                type="button"
+              >
+                {showPassword ? 'Hide' : 'Show'}
+              </button>
+            </span>
           </label>
 
           <button disabled={submitting} type="submit">

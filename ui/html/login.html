@@ -17,6 +17,11 @@
     input { width:100%; margin-top:6px; padding:11px 12px; border-radius:10px;
             border:1px solid var(--line); background:#151217; color:var(--text); font:inherit; }
     input:focus { outline:2px solid color-mix(in srgb, var(--accent) 60%, transparent); border-color:var(--accent); }
+    .field { position:relative; }
+    .field input { padding-right:68px; }
+    .toggle { position:absolute; right:6px; top:50%; transform:translateY(-50%); margin:0; padding:6px 10px;
+              background:transparent; color:var(--muted); font-size:13px; font-weight:600; }
+    .toggle:hover { color:var(--text); }
     button { margin-top:4px; padding:12px; border:0; border-radius:10px; background:var(--accent);
              color:#fff; font:inherit; font-weight:600; cursor:pointer; }
     [role="alert"] { min-height:20px; color:#f1a3ab; font-size:13px; }
@@ -27,7 +32,10 @@
     <h1>Sign in</h1>
     <p>Enter the shared password.</p>
     <label for="password">Password
-      <input id="password" name="password" type="password" autocomplete="current-password" required autofocus>
+      <span class="field">
+        <input id="password" name="password" type="password" autocomplete="current-password" required autofocus>
+        <button type="button" class="toggle" id="toggle" aria-label="Show password" aria-pressed="false">Show</button>
+      </span>
     </label>
     <button type="submit">Continue</button>
     <p role="alert" id="error"></p>
@@ -35,7 +43,16 @@
   <script>
     const form = document.getElementById('login')
     const error = document.getElementById('error')
-    const button = form.querySelector('button')
+    const button = form.querySelector('button[type="submit"]')
+    const input = document.getElementById('password')
+    const toggle = document.getElementById('toggle')
+    toggle.addEventListener('click', () => {
+      const show = input.type === 'password'
+      input.type = show ? 'text' : 'password'
+      toggle.textContent = show ? 'Hide' : 'Show'
+      toggle.setAttribute('aria-label', show ? 'Hide password' : 'Show password')
+      toggle.setAttribute('aria-pressed', String(show))
+    })
     form.addEventListener('submit', async (event) => {
       event.preventDefault()
       error.textContent = ''
